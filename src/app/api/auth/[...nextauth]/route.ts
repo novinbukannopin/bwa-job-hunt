@@ -1,11 +1,11 @@
-import {AuthOptions} from "next-auth";
+import {NextAuthOptions} from "next-auth";
 
 import {comparePassword} from "@/lib/utils";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "../../../../../lib/prisma";
 import NextAuth from "next-auth/next";
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     providers: [
         CredentialsProvider({
@@ -57,7 +57,7 @@ export const authOptions: AuthOptions = {
             return token;
         },
         async session({session, token, user}) {
-            session.user.id = token.id;
+            session.user.id = token.id as string
 
             return session;
         },
