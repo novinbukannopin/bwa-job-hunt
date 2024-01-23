@@ -1,8 +1,9 @@
+import {NextAuthOptions} from "next-auth";
+
+import {comparePassword} from "@/lib/utils";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "../../../../../lib/prisma";
-import {comparePassword} from "@/lib/utils";
-import NextAuth from "next-auth/next"
-import {NextAuthOptions} from "next-auth";
+import NextAuth from "next-auth/next";
 
 export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
@@ -11,53 +12,58 @@ export const authOptions: NextAuthOptions = {
             name: "Credentials",
             credentials: {
                 email: {
-                    label: 'email',
-                    type: 'email',
+                    label: "email",
+                    type: "email",
                 },
                 password: {
-                    label: 'password',
-                    type: 'password',
+                    label: "password",
+                    type: "password",
                 },
             },
             async authorize(credentials, req) {
-                const user = await prisma.company.findUnique({
+                const user = await prisma.company.findFirst({
                     where: {
-                        email: credentials?.email
-                    }
-                })
+                        email: credentials?.email,
+                    },
+                });
 
                 if (!user) {
-                    return null
+                    return null;
                 }
 
-                const isMatch = await comparePassword(credentials?.password!!, user.password)
+                const isMatch = await comparePassword(
+                    credentials?.password!!,
+                    user.password
+                );
 
                 if (isMatch) {
-                    return user
+                    return user;
                 }
 
-                return null
-            }
-        })
+                return null;
+            },
+        }),
     ],
     pages: {
-        signIn: "/auth/sign-in",
-        newUser: "/auth/sign-up"
+        signIn: "/auth/signin",
+        newUser: "/auth/signup",
     },
     callbacks: {
         jwt({token, account, user}) {
             if (account) {
-                token.id = user.id
+                token.id = user.id;
             }
-            return token
+
+            return token;
         },
         async session({session, token, user}) {
-            session.user.id = token.id as string
-            return session
-        }
-    }
-}
+            session.user.id = token.id;
 
-const handler = NextAuth(authOptions)
+            return session;
+        },
+    },
+};
 
-export {handler as GET, handler as POST}
+const handler = NextAuth(authOptions);
+
+export {handler as GET, handler as POST};
