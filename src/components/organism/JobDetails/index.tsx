@@ -3,11 +3,21 @@ import {Progress} from "@/components/ui/progress";
 import {Separator} from "@/components/ui/separator";
 import {Badge} from "@/components/ui/badge";
 import {PartyPopperIcon} from "lucide-react";
+import {CategoryJob, Job} from "@prisma/client";
+import {dateFormat} from "@/lib/utils";
+
+type JobDetailType = {
+    CategoryJob: CategoryJob | null
+} & Job
 
 interface JobDetailProps {
+    detail: JobDetailType | null
 }
 
-const JobDetailPage: FC<JobDetailProps> = () => {
+const JobDetailPage: FC<JobDetailProps> = ({detail}) => {
+
+    const benefits: any = detail?.benefits
+
     return (
         <div>
             <div className={"grid grid-cols-3 w-full gap-5"}>
@@ -17,9 +27,8 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                             Description
                         </div>
                         <div className={"text-gray-400 mt-3"}>
-                            <p className={""}>
-                                lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla euismod, nisl
-                            </p>
+                            <div dangerouslySetInnerHTML={{__html: detail?.description!!}}>
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -27,9 +36,8 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                             Responsibilities
                         </div>
                         <div className={"text-gray-400 mt-3"}>
-                            <p className={""}>
-                                lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla euismod, nisl
-                            </p>
+                            <div dangerouslySetInnerHTML={{__html: detail?.responsibilities!!}}>
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -37,9 +45,17 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                             Who are you
                         </div>
                         <div className={"text-gray-400 mt-3"}>
-                            <p className={""}>
-                                lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla euismod, nisl
-                            </p>
+                            <div dangerouslySetInnerHTML={{__html: detail?.whoYouAre!!}}>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div className={"text-3xl font-semibold"}>
+                            Nice to Haves
+                        </div>
+                        <div className={"text-gray-400 mt-3"}>
+                            <div dangerouslySetInnerHTML={{__html: detail?.niceToHaves!!}}>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -49,26 +65,26 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                     </div>
 
                     <div className={"shadow p-3 text-center my-6"}>
-                        1 <span className={"text-gray-400"}>/ 10 hired</span>
-                        <Progress value={10} max={100} className={"mt-3"}/>
+                        {detail?.applicants} <span className={"text-gray-400"}>of {detail?.needs} hired</span>
+                        <Progress value={(detail?.applicants || 0 / detail?.needs!!) / 100} className={"mt-3"}/>
                     </div>
 
                     <div className={"mb-10 space-y-5"}>
                         <div className={"flex justify-between"}>
                             <div className={"text-gray-500"}>Apply before</div>
-                            <div className={"font-semibold"}>12 Aug 2023</div>
+                            <div className={"font-semibold"}>{dateFormat(detail?.dueDate)}</div>
                         </div>
                         <div className={"flex justify-between"}>
                             <div className={"text-gray-500"}>Job Posted on</div>
-                            <div className={"font-semibold"}>12 Aug 2023</div>
+                            <div className={"font-semibold"}>{dateFormat(detail?.datePosted)}</div>
                         </div>
                         <div className={"flex justify-between"}>
                             <div className={"text-gray-500"}>Job Type</div>
-                            <div className={"font-semibold"}>Full Time</div>
+                            <div className={"font-semibold"}>{dateFormat(detail?.jobType)}</div>
                         </div>
                         <div className={"flex justify-between"}>
                             <div className={"text-gray-500"}>Salary</div>
-                            <div className={"font-semibold"}>$100 - $1000 USD</div>
+                            <div className={"font-semibold"}>${detail?.salaryFrom} - ${detail?.salaryTo} USD</div>
                         </div>
                     </div>
 
@@ -81,11 +97,9 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                         </div>
 
                         <div className={"space-x-5"}>
-                            {['Programming'].map((skill, index) => (
-                                <Badge key={index}>
-                                    {skill}
-                                </Badge>
-                            ))}
+                            <Badge>
+                                {detail?.CategoryJob?.name}
+                            </Badge>
                         </div>
                     </div>
 
@@ -97,7 +111,7 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                         </div>
 
                         <div className={"space-x-5"}>
-                            {['Javascript', 'React', 'NextJS', 'TailwindCSS'].map((skill, index) => (
+                            {detail?.requiredSkill.map((skill, index) => (
                                 <Badge variant={'outline'} key={index}>
                                     {skill}
                                 </Badge>
@@ -118,12 +132,12 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                 </div>
 
                 <div className={"grid grid-cols-4 gap-5 mt-9"}>
-                    {[0, 1, 2].map((item, index) => (
+                    {benefits.map((item: any, index: number) => (
                         <div key={index}>
                             <PartyPopperIcon className={"w-10 h-10 text-primary mb-6"}/>
-                            <div className={"text-lg font-semibold"}>Full Healthcare</div>
+                            <div className={"text-lg font-semibold"}>{item.benefit}</div>
                             <div className={"text-gray-500"}>
-                                we believe in healthy living and that starts with our benefits
+                                {item.description}
                             </div>
                         </div>
                     ))}

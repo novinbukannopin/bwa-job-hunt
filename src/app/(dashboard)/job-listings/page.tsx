@@ -16,12 +16,33 @@ import {Button} from "@/components/ui/button";
 import {MoreVertical} from "lucide-react";
 import {useRouter} from "next/navigation";
 import ButtonActionTable from "@/components/organism/ButtonActionTable";
+import prisma from "../../../../lib/prisma";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/app/api/auth/[...nextauth]/route";
+import {Job} from "@prisma/client";
+import {dateFormat} from "@/lib/utils";
+import moment from "moment";
 
 interface JobListingProps {
 
 }
 
-const JobListingPage: FC<JobListingProps> = () => {
+async function getJobListing() {
+
+    const session = await getServerSession(authOptions)
+
+    const jobs = prisma.job.findMany({
+        where: {
+            companyId: session?.user.id
+        }
+    })
+
+    return jobs
+}
+
+const JobListingPage: FC<JobListingProps> = async ({}) => {
+
+    const data = await getJobListing()
 
     return (
         <div>
@@ -38,23 +59,25 @@ const JobListingPage: FC<JobListingProps> = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {JOB_LISTING_DATA.map((row, index) => (
+                        {data.map((row: Job, index) => (
                             <TableRow key={index}>
                                 <TableCell>{row.roles}</TableCell>
                                 <TableCell>
-                                    <Badge>
-                                        {row.status}
-                                    </Badge>
+                                    {moment(row.datePosted).isBefore(row.dueDate) ? (
+                                        <Badge>Live</Badge>
+                                    ) : (
+                                        <Badge variant={'destructive'}>Expired</Badge>
+                                    )}
                                 </TableCell>
-                                <TableCell>{row.datePosted}</TableCell>
-                                <TableCell>{row.dueDate}</TableCell>
+                                <TableCell>{dateFormat(row.datePosted)}</TableCell>
+                                <TableCell>{dateFormat(row.dueDate)}</TableCell>
                                 <TableCell>
                                     <Badge variant={'outline'}>{row.jobType}</Badge>
                                 </TableCell>
                                 <TableCell>{row.applicants}</TableCell>
                                 <TableCell>{row.applicants} / {row.needs}</TableCell>
                                 <TableCell>
-                                    <ButtonActionTable url={'/job-detail/1'}/>
+                                    <ButtonActionTable url={`/job-detail/${row.id}`}/>
                                 </TableCell>
                             </TableRow>
                         ))}

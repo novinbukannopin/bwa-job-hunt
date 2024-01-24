@@ -23,6 +23,14 @@ import SkillsInput from "@/components/organism/SkillsInput";
 import CKEditor from "@/components/organism/CKEditor";
 import BenefitsInput from "@/components/organism/BenefitsInput";
 import {Button} from "@/components/ui/button";
+import useSWR from "swr";
+import {fetcher} from "@/lib/utils";
+import {CategoryJob, Job} from "@prisma/client";
+import applicants from "@/components/organism/Applicants";
+import {useSession} from "next-auth/react";
+import moment from "moment";
+import {useToast} from "@/components/ui/use-toast";
+import {useRouter} from "next/navigation";
 
 interface PostAJobPageProps {
 }
@@ -31,6 +39,14 @@ const PostAJobPage: FC<PostAJobPageProps> = () => {
 
     const [editorLoaded, setEditorLoaded] = useState<boolean>(false)
 
+    const {data, error, isLoading} = useSWR<CategoryJob[]>('/api/job/categories', fetcher)
+
+    const {data: session} = useSession()
+
+    const {toast} = useToast()
+
+    const router = useRouter()
+
     const form = useForm<z.infer<typeof jobFormSchema>>({
         resolver: zodResolver(jobFormSchema),
         defaultValues: {
@@ -38,8 +54,42 @@ const PostAJobPage: FC<PostAJobPageProps> = () => {
         }
     })
 
-    const onSubmit = (val: z.infer<typeof jobFormSchema>) => {
-        console.log(val)
+    const onSubmit = async (val: z.infer<typeof jobFormSchema>) => {
+        try {
+            const body: any = {
+                applicants: 0,
+                benefits: val.benefits,
+                categoryId: val.categoryId,
+                companyId: session?.user.id!!,
+                datePosted: moment().toDate(),
+                description: val.jobDescription,
+                dueDate: moment().add(1, 'M').toDate(),
+                jobType: val.jobType,
+                needs: 20,
+                niceToHaves: val.niceToHaves,
+                requiredSkill: val.requiredSkills,
+                responsibilities: val.responsibilities,
+                roles: val.roles,
+                salaryFrom: val.salaryFrom,
+                salaryTo: val.salaryTo,
+                whoYouAre: val.whoYouAre
+            }
+
+            await fetch('/api/job', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            })
+
+            router.push('/job-listings')
+
+        } catch (e) {
+            toast({
+                title: "Error",
+                description: "Please try again"
+            })
+            console.log(e)
+        }
     }
 
     useEffect(() => {
@@ -152,9 +202,12 @@ const PostAJobPage: FC<PostAJobPageProps> = () => {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="m@example.com">m@example.com</SelectItem>
-                                            <SelectItem value="m@google.com">m@google.com</SelectItem>
-                                            <SelectItem value="m@support.com">m@support.com</SelectItem>
+                                            {data?.map((item: any, index: number) => (
+                                                    <SelectItem key={item.id + index} value={item.id}>
+                                                        {item.name}
+                                                    </SelectItem>
+                                                )
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <FormDescription>

@@ -4,13 +4,41 @@ import {ArrowLeftIcon} from "lucide-react";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
 import Applicants from "@/components/organism/Applicants";
 import JobDetails from "@/components/organism/JobDetails";
+import {authOptions} from "@/app/api/auth/[...nextauth]/route";
+import {getServerSession} from "next-auth";
+import prisma from "../../../../../lib/prisma";
+import applicants from "@/components/organism/Applicants";
 
-
-interface JobDetailProps {
+type paramsType = {
+    id: string
 }
 
+interface JobDetailProps {
+    params: paramsType
+}
 
-const JobDetailPage: FC<JobDetailProps> = () => {
+async function getDetailJob(id: string) {
+    return prisma.job.findFirst({
+        where: {
+            id: id
+        }, include: {
+            Applicant: {
+                include: {
+                    User: true
+                }
+            },
+            CategoryJob: true,
+        }
+    })
+
+}
+
+const JobDetailPage: FC<JobDetailProps> = async ({params}) => {
+
+    const session = await getServerSession(authOptions)
+
+    const job = await getDetailJob(params.id)
+
     return (
         <div>
             <div className={"inline-flex items-center gap-5 mb-5"}>
@@ -20,9 +48,9 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                     </Link>
                 </div>
                 <div>
-                    <div className={"text-2xl font-semibold mb-1"}>Brand Designer</div>
+                    <div className={"text-2xl font-semibold mb-1"}>{job?.roles}</div>
                     <div>
-                        Design . Full Time . 1/10 Hired
+                        {job?.CategoryJob?.name} . {job?.jobType} . {job?.applicants}/{job?.needs} Hired
                     </div>
 
 
@@ -34,10 +62,10 @@ const JobDetailPage: FC<JobDetailProps> = () => {
                     <TabsTrigger value="jobDetails">Job Details</TabsTrigger>
                 </TabsList>
                 <TabsContent value="applicants"><
-                    Applicants/>
+                    Applicants applicants={job?.Applicant}/>
                 </TabsContent>
                 <TabsContent value="jobDetails">
-                    <JobDetails/>
+                    <JobDetails detail={job}/>
                 </TabsContent>
             </Tabs>
         </div>
